@@ -41,13 +41,15 @@ struct Coroutine {
 
 };
 
+Coroutine *create_coroutine(user_func func, void *args);
+
 class Scheduler {
 public:
     Scheduler(): running_(nullptr) {}
-    void spawn(user_func func, void *args);
+    void spawn(user_func func, void *args, bool is_master);
+    void resume(Coroutine *coroutine);
 
 private:
-    void resume(Coroutine *coroutine);
     void save_stack(Coroutine *coroutine);
 
 // member variables

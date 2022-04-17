@@ -18,12 +18,17 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
     s = cur->sched_;
     assert(s->running_ == cur);
 
+    // delete cur->stack_;
+    // delete cur;
+
+    s->running_ = nullptr;
+
     // then we delete the coroutine
     // and switch back to scheduler
     setcontext(&s->main_);
 }
 
-void Scheduler::spawn(user_func func, void *args) {
+void Scheduler::spawn(user_func func, void *args, bool is_master) {
     Coroutine *cur = new Coroutine;
     getcontext(&cur->ctx_);
     cur->ctx_.uc_stack.ss_sp = stack_;
@@ -36,26 +41,31 @@ void Scheduler::spawn(user_func func, void *args) {
     cur->user_args_ = args;
     cur->sched_ = this;
 
+    if (is_master) {
+        makecontext(&cur->ctx_, (void (*)())(wrapper), 2, nullptr, cur);
+        deque_.push_back(cur);
+        return;
+    }
+
     Coroutine *pre = running_;
+    assert(pre != nullptr);
 
     makecontext(&cur->ctx_, (void (*)())(wrapper), 2, pre, cur);
 
-    if (pre != nullptr) {
-        // save the stack
-        save_stack(pre);
-        running_ = nullptr;
+    // save the stack
+    save_stack(pre);
+    running_ = nullptr;
 
-        // switch to new func
-        swapcontext(&pre->ctx_, &cur->ctx_);
-    } else {
-        swapcontext(&main_, &cur->ctx_);
-    }
+    // switch to new func
+    swapcontext(&pre->ctx_, &cur->ctx_);
 }
 
 void Scheduler::resume(Coroutine *coroutine) {
     coroutine->sched_ = this;
-    memcpy(stack_ + stack_size - coroutine->stack_size_,
-           coroutine->stack_, coroutine->stack_size_);
+    if (coroutine->stack_) {
+        memcpy(stack_ + stack_size - coroutine->stack_size_,
+            coroutine->stack_, coroutine->stack_size_);
+    }
     running_ = coroutine;
     swapcontext(&main_, &coroutine->ctx_);
 }

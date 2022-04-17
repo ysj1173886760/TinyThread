@@ -11,6 +11,8 @@ class AsyncDeque {
 public:
     Coroutine *pop_front();
     Coroutine *pop_back();
+    Coroutine *pop_front_no_block();
+    Coroutine *pop_back_no_block();
     void push_front(Coroutine *coroutine);
     void push_back(Coroutine *coroutine);
     int size();

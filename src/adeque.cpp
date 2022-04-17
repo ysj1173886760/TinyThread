@@ -26,19 +26,41 @@ Coroutine *AsyncDeque::pop_back() {
     return res;
 }
 
+Coroutine *AsyncDeque::pop_back_no_block() {
+    std::unique_lock<std::mutex> guard(mu_);
+    if (deque_.empty()) {
+        return nullptr;
+    }
+
+    Coroutine *res = deque_.back();
+    deque_.pop_back();
+    return res;
+}
+
+Coroutine *AsyncDeque::pop_front_no_block() {
+    std::unique_lock<std::mutex> guard(mu_);
+    if (deque_.empty()) {
+        return nullptr;
+    }
+
+    Coroutine *res = deque_.front();
+    deque_.pop_front();
+    return res;
+}
+
 void AsyncDeque::push_front(Coroutine *coroutine) {
-    std::lock_guard<std::mutex> guard(mu_);
+    std::unique_lock<std::mutex> guard(mu_);
     deque_.push_front(coroutine);
     cv_.notify_one();
 }
 
 void AsyncDeque::push_back(Coroutine *coroutine) {
-    std::lock_guard<std::mutex> guard(mu_);
+    std::unique_lock<std::mutex> guard(mu_);
     deque_.push_back(coroutine);
     cv_.notify_one();
 }
 
 int AsyncDeque::size() {
-    std::lock_guard<std::mutex> guard(mu_);
+    std::unique_lock<std::mutex> guard(mu_);
     return deque_.size();
 }
