@@ -46,17 +46,12 @@ void create(user_func func, void *args) {
     if (!Master::getInstance().table_.count(id)) {
         // create task inside worker thread
         is_master = true;
-        LOG_INFO("master table size %d", Master::getInstance().table_.size());
         s = Master::getInstance().table_.begin()->second;
     } else {
         // create task in main thread
         s = Master::getInstance().table_[id];
     }
-    LOG_INFO("create thread %d", is_master);
 
-    for (const auto &[key, value] : Master::getInstance().table_) {
-        LOG_INFO("%d", key);
-    }
     s->spawn(func, args, is_master);
 }
 

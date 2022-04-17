@@ -1,4 +1,5 @@
 #include "master.h"
+#include "logger.h"
 #include <iostream>
 #include <algorithm>
 #include <random>
@@ -10,8 +11,8 @@ struct Arg {
 
 void quick_sort(void *args) {
     Arg *arg = (Arg*)args;
-    std::cout << arg->left << " " << arg->right << std::endl;
-    if (arg->right - arg->left > 10) {
+    LOG_INFO("%d %d", arg->left, arg->right);
+    if (arg->right - arg->left < 10) {
         std::sort(arg->array + arg->left, arg->array + arg->right);
     } else {
         int middle = (arg->right + arg->left) / 2;
@@ -34,7 +35,7 @@ int main() {
     int max_size = 100;
     int *a = new int[max_size];
     for (int i = 0; i < max_size; i++) {
-        a[i] = rand();
+        a[i] = rand() % 100;
     }
     Arg *arg = new Arg;
     arg->left = 0;
