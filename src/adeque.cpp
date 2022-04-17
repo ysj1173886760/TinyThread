@@ -37,3 +37,8 @@ void AsyncDeque::push_back(Coroutine *coroutine) {
     deque_.push_back(coroutine);
     cv_.notify_one();
 }
+
+int AsyncDeque::size() {
+    std::lock_guard<std::mutex> guard(mu_);
+    return deque_.size();
+}

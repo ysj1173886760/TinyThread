@@ -12,6 +12,7 @@ typedef void (*user_func)(void *);
 const int stack_size = 1024 * 1024;
 
 class Scheduler;
+class AsyncDeque;
 
 enum State {
     Dead = 0,

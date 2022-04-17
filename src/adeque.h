@@ -4,7 +4,6 @@
 #include <deque>
 #include <mutex>
 #include <condition_variable>
-#include "coroutine.h"
 
 struct Coroutine;
 
@@ -14,6 +13,7 @@ public:
     Coroutine *pop_back();
     void push_front(Coroutine *coroutine);
     void push_back(Coroutine *coroutine);
+    int size();
 
 private:
     std::mutex mu_;

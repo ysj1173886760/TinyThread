@@ -2,38 +2,13 @@
 #include <assert.h>
 #include <cstring>
 
-void Scheduler::spawn(user_func func, void *args) {
-    Coroutine *ct = new Coroutine;
-    getcontext(&ct->ctx_);
-    ct->ctx_.uc_stack.ss_sp = stack_;
-    ct->ctx_.uc_stack.ss_size = stack_size;
-    // since we may not resume at current thread/scheduler
-    // so uc_link is not useful
-    // instead, we shall use setcontext directly
-    ct->ctx_.uc_link = 0;
-    ct->user_func_ = func;
-    ct->user_args_ = args;
-    ct->sched_ = this;
-
-    Coroutine *cur = running_;
-    assert(cur != nullptr);
-
-    makecontext(&ct->ctx_, (void (*)())(wrapper), 2, cur, ct);
-
-    // save the stack
-    save_stack(cur);
-    running_ = nullptr;
-
-    // switch to new func
-    swapcontext(&cur->ctx_, &ct->ctx_);
-}
-
 void wrapper(Coroutine *pre, Coroutine *cur) {
     // they should running on the same worker
-    assert(pre->sched_ == cur->sched_);
-
     auto s = cur->sched_;
-    s->deque_.push_back(pre);
+    if (pre != nullptr) {
+        assert(pre->sched_ == cur->sched_);
+        s->deque_.push_back(pre);
+    }
 
     s->running_ = cur;
     // call user defined func
@@ -46,6 +21,35 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
     // then we delete the coroutine
     // and switch back to scheduler
     setcontext(&s->main_);
+}
+
+void Scheduler::spawn(user_func func, void *args) {
+    Coroutine *cur = new Coroutine;
+    getcontext(&cur->ctx_);
+    cur->ctx_.uc_stack.ss_sp = stack_;
+    cur->ctx_.uc_stack.ss_size = stack_size;
+    // since we may not resume at current thread/scheduler
+    // so uc_link is not useful
+    // instead, we shall use setcontext directly
+    cur->ctx_.uc_link = 0;
+    cur->user_func_ = func;
+    cur->user_args_ = args;
+    cur->sched_ = this;
+
+    Coroutine *pre = running_;
+
+    makecontext(&cur->ctx_, (void (*)())(wrapper), 2, pre, cur);
+
+    if (pre != nullptr) {
+        // save the stack
+        save_stack(pre);
+        running_ = nullptr;
+
+        // switch to new func
+        swapcontext(&pre->ctx_, &cur->ctx_);
+    } else {
+        swapcontext(&main_, &cur->ctx_);
+    }
 }
 
 void Scheduler::resume(Coroutine *coroutine) {

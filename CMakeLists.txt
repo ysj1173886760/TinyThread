@@ -14,7 +14,6 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(TinyThread src/adeque.cpp 
                           src/coroutine.cpp 
-                          src/worker.cpp 
                           src/main.cpp)
 
 target_link_libraries(TinyThread pthread)
