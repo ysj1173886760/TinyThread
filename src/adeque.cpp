@@ -32,7 +32,7 @@ void AsyncDeque::push_front(Coroutine *coroutine) {
     cv_.notify_one();
 }
 
-void AsyncDeque::pop_front(Coroutine *coroutine) {
+void AsyncDeque::push_back(Coroutine *coroutine) {
     std::lock_guard<std::mutex> guard(mu_);
     deque_.push_back(coroutine);
     cv_.notify_one();

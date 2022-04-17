@@ -3,7 +3,10 @@
 
 #include <ucontext.h>
 #include <vector>
+#include <atomic>
 #include "adeque.h"
+
+typedef void (*user_func)(void *);
 
 // 1MB stack
 const int stack_size = 1024 * 1024;
@@ -18,7 +21,7 @@ enum State {
 };
 
 struct Coroutine {
-    void *user_func_;
+    user_func user_func_;
     void *user_args_;
     ucontext_t ctx_;
     Scheduler *sched_;
@@ -40,15 +43,14 @@ struct Coroutine {
 class Scheduler {
 public:
     Scheduler(): running_(nullptr) {}
-    void spawn(void *func, void *args);
+    void spawn(user_func func, void *args);
 
 private:
     void resume(Coroutine *coroutine);
-    void yield();
     void save_stack(Coroutine *coroutine);
 
 // member variables
-private:
+public:
     char stack_[stack_size];
     ucontext_t main_;
     AsyncDeque deque_;

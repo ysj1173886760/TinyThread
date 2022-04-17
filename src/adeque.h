@@ -13,7 +13,7 @@ public:
     Coroutine *pop_front();
     Coroutine *pop_back();
     void push_front(Coroutine *coroutine);
-    void pop_front(Coroutine *coroutine);
+    void push_back(Coroutine *coroutine);
 
 private:
     std::mutex mu_;
