@@ -25,6 +25,13 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
 
     s->running_ = nullptr;
 
+    // set current coroutine to done
+    // which indicate this coroutine is finished
+    // worker is responsible to delete it
+    // currently, coroutine should be deleted as long as it's 
+    // returned from "resume"
+    cur->state_ = Done;
+
     // then we delete the coroutine
     // and switch back to scheduler
     setcontext(&s->main_);
@@ -92,7 +99,7 @@ void Scheduler::save_stack(Coroutine *coroutine) {
     char *top = stack_ + stack_size;
 
     if (coroutine->stack_cap_ < top - &dummy) {
-        // delete[] coroutine->stack_;
+        delete[] coroutine->stack_;
         coroutine->stack_cap_ = top - &dummy;
         coroutine->stack_ = new char[top - &dummy];
     }

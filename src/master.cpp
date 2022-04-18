@@ -1,6 +1,13 @@
 #include "master.h"
 #include "logger.h"
 #include "defs.h"
+#include <assert.h>
+
+void free_if_done(Coroutine *ct) {
+    if (ct->state_ == Done) {
+        delete ct;
+    }
+}
 
 void Master::work() {
     // first initialize the mapping from thread_id to scheduler
@@ -29,6 +36,7 @@ void Master::work() {
         auto ct = s->deque_.pop_front_no_block();
         if (ct != nullptr) {
             s->resume(ct);
+            free_if_done(ct);
             continue;
         }
 
@@ -42,6 +50,7 @@ void Master::work() {
                 auto arg = (Arg *)(work->user_args_);
                 LOG_INFO("%p steal work from %p left %d right %d", id, key, arg->left, arg->right);
                 s->resume(work);
+                free_if_done(work);
                 break;
             }
         }
@@ -93,5 +102,6 @@ void check_stack() {
         //     Master::getInstance().table_[id]->stack_ + stack_size - &dummy);
         LOG_INFO("%p stack size %d", id,
             Master::getInstance().table_[id]->running_->stack_ + stack_size - &dummy);
+        assert(Master::getInstance().table_[id]->running_->stack_ + stack_size - &dummy < stack_size);
     }
 }

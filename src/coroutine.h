@@ -15,10 +15,8 @@ class Scheduler;
 class AsyncDeque;
 
 enum State {
-    Dead = 0,
-    Ready = 1,
-    Running = 2,
-    SUSPEND = 3,
+    Running = 0,
+    Done = 1,
 };
 
 struct Coroutine {
@@ -34,7 +32,7 @@ struct Coroutine {
     Coroutine(): user_func_(nullptr),
                  user_args_(nullptr),
                  sched_(nullptr),
-                 state_(Dead),
+                 state_(Running),
                  stack_(nullptr),
                  stack_cap_(0),
                  stack_size_(0) {
