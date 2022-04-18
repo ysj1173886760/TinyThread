@@ -9,7 +9,7 @@
 typedef void (*user_func)(void *);
 
 // 1MB stack
-const int stack_size = 10 * 1024 * 1024;
+const int stack_size = 1024 * 1024;
 
 class Scheduler;
 class AsyncDeque;
@@ -37,7 +37,9 @@ struct Coroutine {
                  state_(Dead),
                  stack_(nullptr),
                  stack_cap_(0),
-                 stack_size_(0) {}
+                 stack_size_(0) {
+        stack_ = new char[stack_size];
+    }
     
     ~Coroutine() {
         delete[] stack_;

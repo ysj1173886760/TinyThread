@@ -7,28 +7,31 @@
 #include <thread>
 #include <unordered_map>
 #include <atomic>
+#include <condition_variable>
+#include <map>
 
 class Master {
 public:
     void work();
     static Master& getInstance() {
-        static Master m(1);
+        static Master m(6);
         return m;
     }
 
     int worker_num_;
-    std::atomic<int> barrier_;
+    int counter_;
     std::unordered_map<std::thread::id, Scheduler*> table_;
+    std::mutex mu_;
+    std::atomic<bool> initialized_;
 
 private:
 
     Master(int worker_num) {
         worker_num_ = worker_num;
-        barrier_.store(0);
+        initialized_.store(false);
         for (int i = 0; i < worker_num; i++) {
             std::thread(&Master::work, this).detach();
         }
-        table_.clear();
     }
 public:
     Master(Master const &) = delete;

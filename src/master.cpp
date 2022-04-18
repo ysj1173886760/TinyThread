@@ -5,16 +5,24 @@
 void Master::work() {
     // first initialize the mapping from thread_id to scheduler
     auto id = std::this_thread::get_id();
-    table_[id] = new Scheduler;
-    barrier_.fetch_add(1);
+    {
+        mu_.lock();
+        table_.insert({id, new Scheduler});
+        counter_++;
+        if (counter_ == worker_num_) {
+            initialized_.store(true);
+        }
+        mu_.unlock();
+    }
 
-    LOG_INFO("barrier %d", barrier_.load());
-    // synchronize here
-    while (barrier_.load() != worker_num_) {}
+    while (initialized_.load() == false) {
+        // do nothing
+    }
+
+    LOG_INFO("table size %d %d %d", table_.size(), counter_, worker_num_);
 
     // start working
     auto s = table_[id];
-
 
     while (true) {
         // first try to pop the task locally
@@ -61,7 +69,9 @@ void create(user_func func, void *args) {
 }
 
 void initialize() {
-    while (Master::getInstance().barrier_.load() != Master::getInstance().worker_num_) {}
+    while (Master::getInstance().initialized_.load() == false) {
+        // do nothing
+    }
 }
 
 void print_current_scheduler() {
@@ -79,7 +89,9 @@ void check_stack() {
     if (!Master::getInstance().table_.count(id)) {
         LOG_INFO("not in worker thread");
     } else {
+        // LOG_INFO("%p stack size %d", id,
+        //     Master::getInstance().table_[id]->stack_ + stack_size - &dummy);
         LOG_INFO("%p stack size %d", id,
-            Master::getInstance().table_[id]->stack_ + stack_size - &dummy);
+            Master::getInstance().table_[id]->running_->stack_ + stack_size - &dummy);
     }
 }

@@ -31,6 +31,10 @@ void quick_sort(void *args) {
 
         create(quick_sort, left_arg);
         // quick_sort(left_arg);
+
+        LOG_INFO("%p: %d %d", std::this_thread::get_id(), arg->left, arg->right);
+        check_stack();
+
         quick_sort(right_arg);
         child_wg->wait();
         

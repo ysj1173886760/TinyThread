@@ -10,7 +10,7 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
     auto s = cur->sched_;
     if (pre != nullptr) {
         assert(pre->sched_ == cur->sched_);
-        s->deque_.push_back(pre);
+        s->deque_.push_front(pre);
     }
 
     s->running_ = cur;
@@ -33,7 +33,7 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
 void Scheduler::spawn(user_func func, void *args, bool is_master) {
     Coroutine *cur = new Coroutine;
     getcontext(&cur->ctx_);
-    cur->ctx_.uc_stack.ss_sp = stack_;
+    cur->ctx_.uc_stack.ss_sp = cur->stack_;
     cur->ctx_.uc_stack.ss_size = stack_size;
     // since we may not resume at current thread/scheduler
     // so uc_link is not useful
@@ -57,7 +57,7 @@ void Scheduler::spawn(user_func func, void *args, bool is_master) {
     makecontext(&cur->ctx_, (void (*)())(wrapper), 2, pre, cur);
 
     // save the stack
-    save_stack(pre);
+    // save_stack(pre);
     running_ = nullptr;
 
     // switch to new func
@@ -67,22 +67,22 @@ void Scheduler::spawn(user_func func, void *args, bool is_master) {
 void Scheduler::resume(Coroutine *coroutine) {
     Scheduler *pre = coroutine->sched_;
     coroutine->sched_ = this;
-    if (coroutine->stack_) {
-        assert(pre != nullptr);
-        memcpy(stack_ + stack_size - coroutine->stack_size_,
-            coroutine->stack_, coroutine->stack_size_);
-        coroutine->ctx_.uc_mcontext.gregs[REG_RIP] += stack_ - pre->stack_;
-        coroutine->ctx_.uc_mcontext.gregs[REG_RSP] += stack_ - pre->stack_;
-        coroutine->ctx_.uc_mcontext.gregs[REG_RBP] += stack_ - pre->stack_;
-    } else {
-        // first time running
-        // re-construct the context
-        coroutine->ctx_.uc_stack.ss_sp = stack_;
-        coroutine->ctx_.uc_stack.ss_size = stack_size;
-        makecontext(&coroutine->ctx_, (void (*)())(wrapper), 2, nullptr, coroutine);
-    }
+    // if (coroutine->stack_) {
+    //     assert(pre != nullptr);
+    //     memcpy(stack_ + stack_size - coroutine->stack_size_,
+    //         coroutine->stack_, coroutine->stack_size_);
+    //     coroutine->ctx_.uc_mcontext.gregs[REG_RIP] += stack_ - pre->stack_;
+    //     coroutine->ctx_.uc_mcontext.gregs[REG_RSP] += stack_ - pre->stack_;
+    //     coroutine->ctx_.uc_mcontext.gregs[REG_RBP] += stack_ - pre->stack_;
+    // } else {
+    //     // first time running
+    //     // re-construct the context
+    //     coroutine->ctx_.uc_stack.ss_sp = stack_;
+    //     coroutine->ctx_.uc_stack.ss_size = stack_size;
+    //     makecontext(&coroutine->ctx_, (void (*)())(wrapper), 2, nullptr, coroutine);
+    // }
     auto arg = (Arg *)coroutine->user_args_;
-    LOG_INFO("%p resume thread left %d right %d", std::this_thread::get_id(), arg->left, arg->right);
+    LOG_INFO("%p resume thread left %d right %d stack %p", std::this_thread::get_id(), arg->left, arg->right, coroutine->stack_);
     running_ = coroutine;
     swapcontext(&main_, &coroutine->ctx_);
 }
