@@ -1,6 +1,9 @@
 #include "coroutine.h"
+#include "logger.h"
+#include "defs.h"
 #include <assert.h>
 #include <cstring>
+#include <thread>
 
 void wrapper(Coroutine *pre, Coroutine *cur) {
     // they should running on the same worker
@@ -18,7 +21,7 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
     s = cur->sched_;
     assert(s->running_ == cur);
 
-    delete cur;
+    // delete cur;
 
     s->running_ = nullptr;
 
@@ -46,6 +49,8 @@ void Scheduler::spawn(user_func func, void *args, bool is_master) {
         return;
     }
 
+    auto arg = (Arg *)args;
+    LOG_INFO("spawn working thread %p left %d right %d", std::this_thread::get_id(), arg->left, arg->right);
     Coroutine *pre = running_;
     assert(pre != nullptr);
 
@@ -60,11 +65,24 @@ void Scheduler::spawn(user_func func, void *args, bool is_master) {
 }
 
 void Scheduler::resume(Coroutine *coroutine) {
+    Scheduler *pre = coroutine->sched_;
     coroutine->sched_ = this;
     if (coroutine->stack_) {
+        assert(pre != nullptr);
         memcpy(stack_ + stack_size - coroutine->stack_size_,
             coroutine->stack_, coroutine->stack_size_);
+        coroutine->ctx_.uc_mcontext.gregs[REG_RIP] += stack_ - pre->stack_;
+        coroutine->ctx_.uc_mcontext.gregs[REG_RSP] += stack_ - pre->stack_;
+        coroutine->ctx_.uc_mcontext.gregs[REG_RBP] += stack_ - pre->stack_;
+    } else {
+        // first time running
+        // re-construct the context
+        coroutine->ctx_.uc_stack.ss_sp = stack_;
+        coroutine->ctx_.uc_stack.ss_size = stack_size;
+        makecontext(&coroutine->ctx_, (void (*)())(wrapper), 2, nullptr, coroutine);
     }
+    auto arg = (Arg *)coroutine->user_args_;
+    LOG_INFO("%p resume thread left %d right %d", std::this_thread::get_id(), arg->left, arg->right);
     running_ = coroutine;
     swapcontext(&main_, &coroutine->ctx_);
 }
@@ -74,11 +92,14 @@ void Scheduler::save_stack(Coroutine *coroutine) {
     char *top = stack_ + stack_size;
 
     if (coroutine->stack_cap_ < top - &dummy) {
-        delete(coroutine->stack_);
+        // delete[] coroutine->stack_;
         coroutine->stack_cap_ = top - &dummy;
         coroutine->stack_ = new char[top - &dummy];
     }
 
     coroutine->stack_size_ = top - &dummy;
+    LOG_INFO("cur stack size %d total stack size %d", coroutine->stack_size_, stack_size);
+    assert(coroutine->stack_size_ < stack_size);
+    LOG_INFO("%p %p %p", coroutine->stack_, &dummy, coroutine->stack_size_);
     memcpy(coroutine->stack_, &dummy, coroutine->stack_size_);
 }

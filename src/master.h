@@ -58,5 +58,7 @@ Master master();
 
 void create(user_func func, void *args);
 void initialize();
+void print_current_scheduler();
+void check_stack();
 
 #endif

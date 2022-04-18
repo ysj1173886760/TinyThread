@@ -9,7 +9,7 @@
 typedef void (*user_func)(void *);
 
 // 1MB stack
-const int stack_size = 1024 * 1024;
+const int stack_size = 10 * 1024 * 1024;
 
 class Scheduler;
 class AsyncDeque;

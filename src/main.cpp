@@ -1,20 +1,16 @@
 #include "master.h"
 #include "logger.h"
+#include "defs.h"
 #include <iostream>
 #include <algorithm>
 #include <random>
 #include <vector>
 #include <assert.h>
 
-struct Arg {
-    int left, right;
-    int *array;
-    WaitGroup *wg;
-};
-
 void quick_sort(void *args) {
     Arg *arg = (Arg*)args;
-    LOG_INFO("%d %d", arg->left, arg->right);
+    LOG_INFO("%p: %d %d", std::this_thread::get_id(), arg->left, arg->right);
+    check_stack();
     if (arg->right - arg->left < 10) {
         std::sort(arg->array + arg->left, arg->array + arg->right);
     } else {
