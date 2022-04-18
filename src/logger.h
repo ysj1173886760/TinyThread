@@ -28,6 +28,8 @@ static constexpr int LOG_LEVEL_DEBUG = 200;
 static constexpr int LOG_LEVEL_TRACE = 100;
 static constexpr int LOG_LEVEL_ALL = 0;
 
+#define LOG_LEVEL 1000
+
 #define LOG_LOG_TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 #define LOG_OUTPUT_STREAM stdout
 

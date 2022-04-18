@@ -7,11 +7,14 @@
 #include <vector>
 #include <assert.h>
 
+int max_size = 1000000;
+int threshold = 100;
+
 void quick_sort(void *args) {
     Arg *arg = (Arg*)args;
     LOG_INFO("%p: %d %d", std::this_thread::get_id(), arg->left, arg->right);
     check_stack();
-    if (arg->right - arg->left < 10) {
+    if (arg->right - arg->left < threshold) {
         std::sort(arg->array + arg->left, arg->array + arg->right);
     } else {
         int middle = (arg->right + arg->left) / 2;
@@ -70,10 +73,11 @@ void quick_sort(void *args) {
 
 int main() {
     initialize();
-    int max_size = 100;
     int *a = new int[max_size];
+    int *b = new int[max_size];
     for (int i = 0; i < max_size; i++) {
-        a[i] = rand() % 100;
+        a[i] = rand();
+        b[i] = a[i];
     }
     WaitGroup wg(1);
     Arg *arg = new Arg;
@@ -81,10 +85,20 @@ int main() {
     arg->right = max_size;
     arg->array = a;
     arg->wg = &wg;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     create(quick_sort, arg);
     wg.wait();
-    for (int i = 0; i < max_size; i++) {
-        std::cout << a[i] << " ";
-    }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "TinyThread Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+    std::cout << "TinyThread Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+
+    std::chrono::steady_clock::time_point begin1 = std::chrono::steady_clock::now();
+    std::sort(b, b + max_size);
+    std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
+
+    std::cout << "std::sort Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end1 - begin1).count() << "[µs]" << std::endl;
+    std::cout << "std::sort Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end1 - begin1).count() << "[ns]" << std::endl;
+    
     return 0;
 }

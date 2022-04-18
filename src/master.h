@@ -14,7 +14,7 @@ class Master {
 public:
     void work();
     static Master& getInstance() {
-        static Master m(2);
+        static Master m(6);
         return m;
     }
 
