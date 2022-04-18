@@ -18,8 +18,9 @@ void wrapper(Coroutine *pre, Coroutine *cur) {
     s = cur->sched_;
     assert(s->running_ == cur);
 
-    // delete cur->stack_;
-    // delete cur;
+    // TODO: use destructor to free stack
+    delete[] cur->stack_;
+    delete cur;
 
     s->running_ = nullptr;
 

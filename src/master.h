@@ -34,7 +34,24 @@ public:
     Master(Master const &) = delete;
     void operator=(Master const &) = delete;
 
+};
 
+class WaitGroup {
+public:
+    WaitGroup(int worker): counter_(0), worker_(worker) {}
+    void done() {
+        counter_.fetch_add(1);
+    }
+    void wait() {
+        while (counter_.load() < worker_) {}
+    }
+    bool try_wait() {
+        return counter_.load() == worker_;
+    }
+
+private:
+    std::atomic<int> counter_;
+    int worker_;
 };
 
 Master master();
