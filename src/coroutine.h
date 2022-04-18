@@ -38,6 +38,10 @@ struct Coroutine {
                  stack_(nullptr),
                  stack_cap_(0),
                  stack_size_(0) {}
+    
+    ~Coroutine() {
+        delete[] stack_;
+    }
 
 };
 
